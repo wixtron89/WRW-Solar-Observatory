@@ -1,5 +1,4 @@
 # MQTT Bridge
-# MQTT Bridge
 
 How To Install?
 
