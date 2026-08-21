@@ -1,1 +1,1 @@
-# WRW-Solar-Observatory
+# Daytiome Sky Quality
