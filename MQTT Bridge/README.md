@@ -1,9 +1,4 @@
 # MQTT Bridge
 
-How To Install?
-
-- Raspi 3
-- OS: Trixie
-- MQBRIDGE-SOM1
-
-Step by Step Installation
+Install Mosquitto
+https://randomnerdtutorials.com/how-to-install-mosquitto-broker-on-raspberry-pi/
