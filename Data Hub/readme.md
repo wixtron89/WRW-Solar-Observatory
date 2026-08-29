@@ -5,6 +5,14 @@
 ### Web Login
 [http://192.168.6.163:1880/](http://192.168.6.163:1880/)
 
+### Setting an encryption key for your credentials
+
+```uuidgen
+```
+
+
+
+
 ### Usefull commands
 
 Check version
