@@ -3,5 +3,5 @@
 ## Node Red
 
 ###To stop the running container:
->cd ~/IOTstack
-docker-compose down nodered
+`cd ~/IOTstack
+docker-compose down nodered`
