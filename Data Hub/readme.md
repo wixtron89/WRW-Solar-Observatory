@@ -29,7 +29,7 @@ docker-compose up --build -d nodered
 docker system prune -f
 ```
 Upgrade Node Red
-The only way to know, for certain, when an update to Node-RED is available is to check the [nodered/node-red]{https://hub.docker.com/r/nodered/node-red/tags?page=1&ordering=last_updated} tags page on DockerHub.
+The only way to know, for certain, when an update to Node-RED is available is to check the [nodered/node-red](https://hub.docker.com/r/nodered/node-red/tags?page=1&ordering=last_updated) tags page on DockerHub.
 ```
 cd ~/IOTstack
 docker-compose build --no-cache --pull nodered
