@@ -38,6 +38,10 @@ docker exec nodered node -e "console.log(require('bcryptjs').hashSync(process.ar
 Copy that text to your clipboard, then follow the instructions at [Node-RED User Guide - Securing Node-RED - Username & Password-based authentication](https://nodered.org/docs/user-guide/runtime/securing-node-red#usernamepassword-based-authentication).
 
 
+### Complete Guide
+(https://sensorsiot.github.io/IOTstack/Containers/Node-RED/)
+
+
 ### Usefull commands
 
 Check version
