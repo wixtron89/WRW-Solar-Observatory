@@ -29,6 +29,14 @@ cd ~/IOTstack
 docker-compose restart nodered
 ```
 
+### Username Pasword Authentication
+
+Replacing PASSWORD with your own password:
+```
+docker exec nodered node -e "console.log(require('bcryptjs').hashSync(process.argv[1], 8));" MYPASSWORD
+```
+Copy that text to your clipboard, then follow the instructions at [Node-RED User Guide - Securing Node-RED - Username & Password-based authentication](https://nodered.org/docs/user-guide/runtime/securing-node-red#usernamepassword-based-authentication).
+
 
 ### Usefull commands
 
