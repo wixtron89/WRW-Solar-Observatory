@@ -7,10 +7,27 @@
 
 ### Setting an encryption key for your credentials
 
-```uuidgen
+Generate a UUID as your key:
 ```
-
-
+uuidgen
+```
+Once you have defined your encryption key, use sudo and your favourite text editor to open this file:
+```
+sudo nano ~/IOTstack/volumes/nodered/data/settings.js
+```
+Search for credentialSecret:
+```
+//credentialSecret: "a-secret-key",
+```
+Un-comment the line and replace a-secret-key with your chosen key. Do not remove the comma at the end of the line. The result should look something like this:
+```
+credentialSecret: "2deb50d4-38f5-4ab3-a97e-d59741802e2d",
+```
+Save the file and then restart Node-RED:
+```
+cd ~/IOTstack
+docker-compose restart nodered
+```
 
 
 ### Usefull commands
