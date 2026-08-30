@@ -1,5 +1,10 @@
 # Data Hub
 
+Install from:
+https://sensorsiot.github.io/IOTstack/
+
+
+
 ## Node Red
 
 ### Web Login
