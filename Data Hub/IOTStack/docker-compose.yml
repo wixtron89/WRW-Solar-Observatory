@@ -1,4 +1,3 @@
-Data Hu
 
   influxdb:
     container_name: influxdb
