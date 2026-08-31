@@ -1,3 +1,69 @@
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+  nextcloud:
+    driver: bridge
+    internal: true
+    ipam:
+      driver: default
+
+services:
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    restart: unless-stopped
+    user: "0"
+    ports:
+    - "3000:3000"
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    - GF_PATHS_DATA=/var/lib/grafana
+    - GF_PATHS_LOGS=/var/log/grafana
+    volumes:
+    - ./volumes/grafana/data:/var/lib/grafana
+    - ./volumes/grafana/log:/var/log/grafana
+    healthcheck:
+      test: ["CMD", "wget", "-O", "/dev/null", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  nodered:
+    container_name: nodered
+    build:
+      context: ./services/nodered/.
+      args:
+      - DOCKERHUB_TAG=latest
+      - EXTRA_PACKAGES=
+    restart: unless-stopped
+    user: "0"
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    ports:
+    - "1880:1880"
+    volumes:
+    - ./volumes/nodered/data:/data
+    - ./volumes/nodered/ssh:/root/.ssh
+
+  mosquitto:
+    container_name: mosquitto
+    build:
+      context: ./.templates/mosquitto/.
+      args:
+      - MOSQUITTO_BASE=eclipse-mosquitto:latest
+    restart: unless-stopped
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    ports:
+    - "1883:1883"
+    volumes:
+    - ./volumes/mosquitto/config:/mosquitto/config
+    - ./volumes/mosquitto/data:/mosquitto/data
+    - ./volumes/mosquitto/log:/mosquitto/log
+    - ./volumes/mosquitto/pwfile:/mosquitto/pwfile
 
   influxdb:
     container_name: influxdb
@@ -25,4 +91,13 @@
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 30s    
+      
+  portainer-ce:
+    container_name: portainer-ce
+    image: portainer/portainer-ce
+    restart: unless-stopped
+    ports:
+    - "8000:8000"
+    - "9000:9000"
+      
