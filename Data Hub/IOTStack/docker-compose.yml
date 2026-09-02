@@ -10,6 +10,41 @@ networks:
       driver: default
 
 services:
+  telegraf:
+    container_name: telegraf
+    build: ./.templates/telegraf/.
+    hostname: iotstack # optional
+    restart: unless-stopped
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    ports:
+    - "8092:8092/udp"
+    - "8094:8094/tcp"
+    - "8125:8125/udp"
+    volumes:
+    - ./volumes/telegraf:/etc/telegraf
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+    - influxdb
+    - mosquitto
+
+  mosquitto:
+    container_name: mosquitto
+    build:
+      context: ./.templates/mosquitto/.
+      args:
+      - MOSQUITTO_BASE=eclipse-mosquitto:latest
+    restart: unless-stopped
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    ports:
+    - "1883:1883"
+    volumes:
+    - ./volumes/mosquitto/config:/mosquitto/config
+    - ./volumes/mosquitto/data:/mosquitto/data
+    - ./volumes/mosquitto/log:/mosquitto/log
+    - ./volumes/mosquitto/pwfile:/mosquitto/pwfile
+
   grafana:
     container_name: grafana
     image: grafana/grafana
@@ -31,7 +66,35 @@ services:
       retries: 3
       start_period: 30s
 
-  nodered:
+  influxdb:
+    container_name: influxdb
+    image: "influxdb:1.12"
+    restart: unless-stopped
+    user: "0"
+    ports:
+    - "8086:8086"
+    environment:
+    - TZ=${TZ:-Etc/UTC}
+    - INFLUXDB_HTTP_FLUX_ENABLED=false
+    - INFLUXDB_REPORTING_DISABLED=false
+    - INFLUXDB_HTTP_AUTH_ENABLED=true
+    - INFLUXDB_MONITOR_STORE_ENABLED=FALSE
+    - INFLUX_USERNAME=dba
+    - INFLUX_PASSWORD=unimatrix
+  # - INFLUXDB_UDP_ENABLED: false
+  # - INFLUXDB_UDP_BIND_ADDRESS: 0.0.0.0:8086
+  # - INFLUXDB_UDP_DATABASE: udp
+    volumes:
+    - ./volumes/influxdb/data:/var/lib/influxdb
+    - ./backups/influxdb/db:/var/lib/influxdb/backup
+    healthcheck:
+      test: ["CMD", "curl", "http://localhost:8086"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+ nodered:
     container_name: nodered
     build:
       context: ./services/nodered/.
@@ -47,52 +110,6 @@ services:
     volumes:
     - ./volumes/nodered/data:/data
     - ./volumes/nodered/ssh:/root/.ssh
-
-  mosquitto:
-    container_name: mosquitto
-    build:
-      context: ./.templates/mosquitto/.
-      args:
-      - MOSQUITTO_BASE=eclipse-mosquitto:latest
-    restart: unless-stopped
-    environment:
-    - TZ=${TZ:-Etc/UTC}
-    ports:
-    - "1883:1883"
-    volumes:
-    - ./volumes/mosquitto/config:/mosquitto/config
-    - ./volumes/mosquitto/data:/mosquitto/data
-    - ./volumes/mosquitto/log:/mosquitto/log
-    - ./volumes/mosquitto/pwfile:/mosquitto/pwfile
-
-  influxdb:
-    container_name: influxdb
-    image: "influxdb:1.12"
-    restart: unless-stopped
-    user: "0"
-    ports:
-    - "8086:8086"
-    environment:
-    - TZ=Etc/UTC
-    - INFLUXDB_HTTP_FLUX_ENABLED=false
-    - INFLUXDB_REPORTING_DISABLED=false
-    - INFLUXDB_HTTP_AUTH_ENABLED=true
-    - INFLUXDB_MONITOR_STORE_ENABLED=FALSE
-    - INFLUX_USERNAME=dba
-    - INFLUX_PASSWORD=unimatrix
-    - INFLUXDB_UDP_ENABLED=false
-    - INFLUXDB_UDP_BIND_ADDRESS=0.0.0.0:8086
-    - INFLUXDB_UDP_DATABASE=udp
-    volumes:
-    - ./volumes/influxdb/data:/var/lib/influxdb
-    - ./backups/influxdb/db:/var/lib/influxdb/backup
-    healthcheck:
-      test: ["CMD", "curl", "http://localhost:8086"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s    
-      
   portainer-ce:
     container_name: portainer-ce
     image: portainer/portainer-ce
@@ -100,4 +117,11 @@ services:
     ports:
     - "8000:8000"
     - "9000:9000"
+    # HTTPS
+    - "9443:9443"
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ./volumes/portainer-ce/data:/data
+
+
       
