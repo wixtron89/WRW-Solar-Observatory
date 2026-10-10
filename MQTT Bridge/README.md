@@ -12,10 +12,12 @@ mosquitto_message_timestamp.so
 ### Location of timestamp plugins:
 /etc/mosquitto/plugins
 
-Docker volume:
+### Docker volume:
+```
 my-mosquitto/
 ├── docker-compose.yml
 └── config/
     ├── mosquitto.conf
     └── plugins/
         └── your_plugin.so
+```
