@@ -8,20 +8,20 @@ services:
   # ----------------------------------------------------
   # MQ-BROKER
   # ----------------------------------------------------
-  # mqbroker:
-    # image: eclipse-mosquitto:latest
-    # container_name: mqbroker
-    # restart: unless-stopped
-    # environment:
-      # - TZ=${TZ:-Etc/UTC}
-    # ports:
-      # - "1884:1883"
-      # - "9002:9001"
-    # volumes:
-      # - /home/pi/wrwodev/volumes/mqbroker/config:/mosquitto/config
-      # - /home/pi/wrwodev/volumes/mqbroker/data:/mosquitto/data
-      # - /home/pi/wrwodev/volumes/mqbroker/log:/mosquitto/log
-      # - /home/pi/wrwodev/volumes/mqbroker/pwfile:/mosquitto/pwfile      
+  mqbroker:
+    image: eclipse-mosquitto:latest
+    container_name: mqbroker
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Etc/UTC}
+    ports:
+      - "1884:1883"
+      - "9002:9001"
+    volumes:
+      - /home/pi/wrwodev/volumes/mqbroker/config:/mosquitto/config
+      - /home/pi/wrwodev/volumes/mqbroker/data:/mosquitto/data
+      - /home/pi/wrwodev/volumes/mqbroker/log:/mosquitto/log
+      - /home/pi/wrwodev/volumes/mqbroker/pwfile:/mosquitto/pwfile      
      # # - /etc/localtime:/etc/localtime:ro
      # # - /etc/timezone:/etc/timezone:ro
   # #  networks:
@@ -136,3 +136,4 @@ services:
   #    - influxdb1
 #    networks:
  #     - iot-network
+
