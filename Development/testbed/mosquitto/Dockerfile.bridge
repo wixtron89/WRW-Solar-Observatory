@@ -1,0 +1,15 @@
+# MQ-BRIDGE image = eclipse-mosquitto + timestamp plugin compiled for THIS image.
+# The .so in the WRW repo is built on Debian/glibc ARM64 and will not load in the
+# Alpine/musl based eclipse-mosquitto image (nor on an x86 PC), so we build it here.
+ARG MOSQUITTO_VERSION=2.0.22
+
+FROM alpine:3.20 AS build
+ARG MOSQUITTO_VERSION
+RUN apk add --no-cache build-base git
+RUN git clone --depth 1 -b v${MOSQUITTO_VERSION} https://github.com/eclipse-mosquitto/mosquitto.git /src
+COPY plugin/mosquitto_message_timestamp.c /plugin/
+RUN gcc -O2 -fPIC -shared -I/src -I/src/include -I/src/lib \
+        /plugin/mosquitto_message_timestamp.c -o /plugin/mosquitto_message_timestamp.so
+
+FROM eclipse-mosquitto:${MOSQUITTO_VERSION}
+COPY --from=build /plugin/mosquitto_message_timestamp.so /mosquitto/plugins/mosquitto_message_timestamp.so

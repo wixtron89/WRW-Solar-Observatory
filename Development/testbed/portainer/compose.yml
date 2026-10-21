@@ -1,0 +1,21 @@
+# Portainer CE - web UI for Docker, separate from the WRW stack (survives its down -v).
+# Run on each machine:   cd ~/wrw-testbed/portainer && docker compose up -d
+# Open:                  https://<machine IP>:9443   (self-signed certificate)
+# Create the admin user within 5 minutes of the first start, otherwise Portainer locks
+# the setup: then `docker compose restart` and try again.
+# It has full control over Docker (docker.sock): keep it on the LAN, use a strong password.
+
+name: portainer
+
+services:
+  portainer:
+    image: portainer/portainer-ce:${PORTAINER_VERSION:-2.21.4}
+    restart: always
+    ports:
+      - "${PORTAINER_PORT:-9443}:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+
+volumes:
+  portainer-data:

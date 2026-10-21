@@ -1,0 +1,6 @@
+{
+  "broker_local": {
+    "user": "${MQTT_USER}",
+    "password": "${MQTT_PASS}"
+  }
+}

@@ -1,0 +1,772 @@
+{
+  "uid": "wrwo-daily",
+  "title": "WRW daily statistics",
+  "tags": [
+    "wrwo"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+    ]
+  },
+  "schemaVersion": 39,
+  "version": 1,
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 32,
+      "type": "row",
+      "title": "Daily summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 33,
+      "type": "table",
+      "title": "Pipeline: points and worst delay per day",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT \"points\" AS \"cloudwatcher points\", \"max_delay_s\" AS \"cloudwatcher max delay (s)\" FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT \"points\" AS \"seeing points\", \"max_delay_s\" AS \"seeing max delay (s)\" FROM \"wrwo\".\"daily\".\"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        }
+      ],
+      "description": "Compare with the other machine: SOM and CAM should have the same points per day. Max delay shows the longest SOM→CAM outage of the day."
+    },
+    {
+      "id": 34,
+      "type": "table",
+      "title": "CloudWatcher per day",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT \"points\" AS \"points\", \"min_temp\" AS \"temp min °C\", \"mean_temp\" AS \"temp mean\", \"max_temp\" AS \"temp max\", \"min_hum\" AS \"hum min %\", \"mean_hum\" AS \"hum mean\", \"max_hum\" AS \"hum max\", \"mean_dewp\" AS \"dew point mean °C\", \"min_clouds\" AS \"clouds min\", \"mean_clouds\" AS \"clouds mean\", \"max_clouds\" AS \"clouds max\", \"mean_wind\" AS \"wind mean km/h\", \"max_gust\" AS \"gust max\", \"min_rain\" AS \"rain min\", \"mean_safe\" * 100 AS \"safe % of day\" FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      },
+      "description": "safe % of day = share of CloudWatcher samples with safe=1. rain min < 1700 = it rained."
+    },
+    {
+      "id": 35,
+      "type": "table",
+      "title": "Alcor seeing per day",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT \"points\" AS \"points\", \"min_seeing_arcsec\" AS \"seeing min (arcsec)\", \"mean_seeing_arcsec\" AS \"seeing mean\", \"max_seeing_arcsec\" AS \"seeing max\", \"mean_r0\" AS \"r₀ mean mm\", \"max_r0\" AS \"r₀ max mm\", \"min_temp_inside_box\" AS \"box temp min °C\", \"max_temp_inside_box\" AS \"box temp max °C\", \"mean_valid_seeing\" * 100 AS \"valid % of samples\" FROM \"wrwo\".\"daily\".\"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      },
+      "description": "Seeing statistics over the valid (sunlit) samples only. valid % ≈ share of the day with sun."
+    },
+    {
+      "id": 36,
+      "type": "row",
+      "title": "Daily trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "id": 37,
+      "type": "timeseries",
+      "title": "Seeing min / mean / max",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$col",
+          "query": "SELECT \"min_seeing_arcsec\" AS \"min\", \"mean_seeing_arcsec\" AS \"mean\", \"max_seeing_arcsec\" AS \"max\" FROM \"wrwo\".\"daily\".\"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "unit": "arcsec",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "1d"
+    },
+    {
+      "id": 38,
+      "type": "timeseries",
+      "title": "Temperature min / mean / max",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$col",
+          "query": "SELECT \"min_temp\" AS \"min\", \"mean_temp\" AS \"mean\", \"max_temp\" AS \"max\" FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "1d"
+    },
+    {
+      "id": 39,
+      "type": "timeseries",
+      "title": "Safe share of the day",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "safe %",
+          "query": "SELECT \"mean_safe\" * 100 AS \"safe\" FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "1d"
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Points per day",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT \"points\" AS \"points\" FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT \"points\" AS \"points\" FROM \"wrwo\".\"daily\".\"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cloudwatcher"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "1d",
+      "description": "A drop = data missing that day (device, bridge or link problem)."
+    },
+    {
+      "id": 41,
+      "type": "row",
+      "title": "All values: min / mean / max of every numeric field",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "panels": []
+    },
+    {
+      "id": 42,
+      "type": "table",
+      "title": "CloudWatcher: all fields",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT * FROM \"wrwo\".\"daily\".\"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": "table",
+      "title": "Alcor seeing: all fields",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT * FROM \"wrwo\".\"daily\".\"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 44,
+      "type": "table",
+      "title": "Telegraf CPU: all fields",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 58
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "table",
+          "query": "SELECT * FROM \"wrwo\".\"daily\".\"cpu\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 2,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "displayName",
+                "value": "Day"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*points.*"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "sortBy": [
+          {
+            "displayName": "Day",
+            "desc": true
+          }
+        ]
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "Live telemetry",
+      "type": "link",
+      "url": "/d/wrwo-telemetry",
+      "icon": "dashboard",
+      "keepTime": false,
+      "includeVars": false,
+      "targetBlank": false,
+      "tooltip": "",
+      "tags": []
+    }
+  ],
+  "description": "Per local day, from InfluxDB retention policy 'daily' (continuous query daily_stats). Today is partial and updated hourly."
+}

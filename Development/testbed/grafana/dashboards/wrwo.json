@@ -1,0 +1,1784 @@
+{
+  "uid": "wrwo-telemetry",
+  "title": "WRW telemetry",
+  "tags": [
+    "wrwo"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "schemaVersion": 39,
+  "version": 4,
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Pipeline (SOM → CAM)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Points / last minute",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT count(\"delay_s\") FROM \"seeing\" WHERE time > now() - 1m"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT count(\"delay_s\") FROM \"cloudwatcher\" WHERE time > now() - 1m"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "description": "Simulator default: seeing 30 (every 2 s), cloudwatcher 2 (every 30 s). 0 = no data arriving."
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Latest delay",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT last(\"delay_s\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "description": "Arrival time at Node-RED minus the MQ-BRIDGE plugin timestamp. Large after a SOM-CAM link outage."
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Values rejected by QC (time range)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT sum(\"qc_rejected\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT sum(\"qc_rejected\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Points without plugin timestamp",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT count(\"delay_s\") FROM \"seeing\" WHERE \"ts_source\" = 'nodered' AND $timeFilter"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT count(\"delay_s\") FROM \"cloudwatcher\" WHERE \"ts_source\" = 'nodered' AND $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      },
+      "description": "ts_source=nodered: message did not pass MQ-BRIDGE or the plugin is not loaded. Must be 0."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Delay (delay_s)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT max(\"delay_s\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT max(\"delay_s\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s",
+      "description": "Normally < 1 s. After a link outage: a spike as high as the outage was long, then back down."
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Points per minute",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "cloudwatcher",
+          "query": "SELECT count(\"delay_s\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time(1m) fill(0)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT count(\"delay_s\") FROM \"seeing\" WHERE $timeFilter GROUP BY time(1m) fill(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "description": "A 0 bar = gap in the data. After a CAM outage there should be none: the bridge queue fills it in."
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Lunatico AAG CloudWatcher",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "panels": []
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Status",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "safe",
+          "query": "SELECT last(\"safe\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "SAFE",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "UNSAFE",
+                  "color": "red",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      },
+      "description": "CloudWatcher 'safe' field: 1 = all conditions Safe."
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Clouds (sky − ambient)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "clouds",
+          "query": "SELECT last(\"clouds\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": -25
+              },
+              {
+                "color": "red",
+                "value": -15
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Temperature",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "temp",
+          "query": "SELECT last(\"temp\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Humidity",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "hum",
+          "query": "SELECT last(\"hum\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "humidity",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Wind",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "wind",
+          "query": "SELECT last(\"wind\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "velocitykmh",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Rain sensor",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "rain",
+          "query": "SELECT last(\"rain\") FROM \"cloudwatcher\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1700
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "description": "Rain sensor frequency: high (about 2100+) = dry, low = wet."
+    },
+    {
+      "id": 15,
+      "type": "state-timeline",
+      "title": "Safety conditions",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "interval": "30s",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "clouds",
+          "query": "SELECT last(\"cloudsSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "wind",
+          "query": "SELECT last(\"windSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "C",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "rain",
+          "query": "SELECT last(\"rainSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "D",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "humidity",
+          "query": "SELECT last(\"humSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "E",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "light",
+          "query": "SELECT last(\"lightSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "F",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "pressure",
+          "query": "SELECT last(\"pressureSafe\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Safe": {
+                  "text": "Safe",
+                  "color": "green",
+                  "index": 0
+                },
+                "Unsafe": {
+                  "text": "Unsafe",
+                  "color": "red",
+                  "index": 1
+                },
+                "Unknown": {
+                  "text": "Unknown",
+                  "color": "#808080",
+                  "index": 2
+                }
+              }
+            }
+          ],
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "left",
+        "rowHeight": 0.85,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Temperature, dew point, raw IR",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "temp",
+          "query": "SELECT mean(\"temp\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "dew point",
+          "query": "SELECT mean(\"dewp\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "C",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "raw IR",
+          "query": "SELECT mean(\"rawir\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s"
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Clouds (sky − ambient)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "clouds",
+          "query": "SELECT mean(\"clouds\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "unit": "celsius",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": -25
+              },
+              {
+                "color": "red",
+                "value": -15
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s",
+      "description": "Dashed lines: clear/cloudy (-25) and unsafe (-15) limits used by the simulator."
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Humidity",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "humidity",
+          "query": "SELECT mean(\"hum\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "humidity",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s"
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Wind & gust",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "wind",
+          "query": "SELECT mean(\"wind\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "gust",
+          "query": "SELECT max(\"gust\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "velocitykmh"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s"
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Rain & light sensors",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 33
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "rain",
+          "query": "SELECT mean(\"rain\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "light",
+          "query": "SELECT mean(\"light\") FROM \"cloudwatcher\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "light"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "30s",
+      "description": "rain: rain sensor frequency (low = wet). light: raw light sensor value (right axis)."
+    },
+    {
+      "id": 21,
+      "type": "row",
+      "title": "Alcor Solar Seeing Monitor",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "panels": []
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Seeing (FWHM)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT last(\"seeing_arcsec\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "arcsec",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "noValue": "no sun"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "description": "< 1\" excellent, < 2\" good, < 3\" average, otherwise poor (manufacturer classes)."
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Fried parameter r₀",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "r0",
+          "query": "SELECT last(\"r0\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "lengthmm",
+          "decimals": 1,
+          "noValue": "no sun",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Box temperature",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "temp",
+          "query": "SELECT last(\"temp_inside_box\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 45
+              },
+              {
+                "color": "red",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 25,
+      "type": "stat",
+      "title": "Valid seeing",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "valid",
+          "query": "SELECT last(\"valid_seeing\") FROM \"seeing\" WHERE $timeFilter"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#808080",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "YES",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "NO (no sun)",
+                  "color": "#808080",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Seeing",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing",
+          "query": "SELECT mean(\"seeing_arcsec\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "seeing max",
+          "query": "SELECT max(\"seeing_arcsec\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "unit": "arcsec",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "10s",
+      "description": "Dashed lines: 1\" / 2\" / 3\" quality classes."
+    },
+    {
+      "id": 27,
+      "type": "timeseries",
+      "title": "Fried parameter r₀",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "r0",
+          "query": "SELECT mean(\"r0\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "lengthmm"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "10s"
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "Sun signal (filtered mean ADU)",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "mean ADU F",
+          "query": "SELECT mean(\"mean_adu_f\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        },
+        {
+          "refId": "B",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "valid",
+          "query": "SELECT max(\"valid_seeing\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "valid"
+            },
+            "properties": [
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "10s",
+      "description": "Raw solar signal level; drops at night and under clouds. valid (right axis): 1 = seeing computed."
+    },
+    {
+      "id": 29,
+      "type": "timeseries",
+      "title": "Box temperature",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "temp",
+          "query": "SELECT mean(\"temp_inside_box\") FROM \"seeing\" WHERE $timeFilter GROUP BY time($__interval) fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "interval": "10s"
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Telegraf",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "panels": []
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "CPU idle",
+      "datasource": {
+        "type": "influxdb",
+        "uid": "influx-wrwo"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 63
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawQuery": true,
+          "resultFormat": "time_series",
+          "alias": "$tag_host",
+          "query": "SELECT mean(\"usage_idle\") FROM \"cpu\" WHERE $timeFilter GROUP BY time($__interval), \"host\" fill(null)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    }
+  ],
+  "links": [
+    {
+      "title": "Daily statistics",
+      "type": "link",
+      "url": "/d/wrwo-daily",
+      "icon": "dashboard",
+      "keepTime": false,
+      "includeVars": false,
+      "targetBlank": false,
+      "tooltip": "",
+      "tags": []
+    }
+  ]
+}

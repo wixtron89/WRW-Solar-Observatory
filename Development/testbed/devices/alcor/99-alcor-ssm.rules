@@ -1,0 +1,4 @@
+# Alcor Solar Seeing Monitor (Microchip 04d8:003f): access without sudo for group plugdev
+# sudo cp 99-alcor-ssm.rules /etc/udev/rules.d/ && sudo udevadm control --reload-rules && sudo udevadm trigger
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="003f", MODE="0660", GROUP="plugdev"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="003f", MODE="0660", GROUP="plugdev"
