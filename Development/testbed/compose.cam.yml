@@ -1,0 +1,107 @@
+# WRW observatory telemetry - CAM machine
+#
+#  (mqbridge on SOM) --> mqbroker-cam --> nodered-cam --> influx-cam --> grafana-cam
+#
+# Selected by ROLE=cam in .env.
+# The SOM bridge connects to CAM_BROKER_PUBLISH_PORT (default 1885) on this machine.
+
+name: wrw-cam
+
+x-mosquitto: &mosquitto
+  restart: unless-stopped
+  # strip Windows CRLF (git autocrlf / editors) before running the script
+  entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /entrypoint.sh > /tmp/entrypoint.sh && exec /bin/sh /tmp/entrypoint.sh"]
+  environment: &mqenv
+    TZ: ${TZ:-Asia/Jakarta}
+
+x-influx: &influx
+  image: influxdb:${INFLUX_VERSION:-1.12}
+  restart: unless-stopped
+  environment:
+    TZ: ${TZ:-Asia/Jakarta}
+    INFLUXDB_DB: ${INFLUX_DB:-wrwo}             # created on first init
+    INFLUXDB_HTTP_AUTH_ENABLED: "false"
+    INFLUXDB_REPORTING_DISABLED: "true"
+  healthcheck:
+    test: ["CMD", "influx", "-execute", "SHOW DATABASES"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+    start_period: 10s
+
+x-grafana: &grafana
+  image: grafana/grafana:${GRAFANA_VERSION:-11.6.0}
+  restart: unless-stopped
+  environment: &grafenv
+    TZ: ${TZ:-Asia/Jakarta}
+    INFLUX_DB: ${INFLUX_DB:-wrwo}                 # used by provisioning/datasources/influx.yml
+    GF_SECURITY_ADMIN_USER: admin
+    GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS}   # only applied on first start
+    GF_AUTH_ANONYMOUS_ENABLED: "true"             # dev: dashboards viewable without login
+    GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    GF_ANALYTICS_REPORTING_ENABLED: "false"
+    GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/wrwo.json
+
+services:
+  mqbroker-cam:
+    <<: *mosquitto
+    image: eclipse-mosquitto:${MOSQUITTO_VERSION:-2.0.22}
+    ports:
+      - "${CAM_BROKER_PUBLISH_PORT:-1885}:1883"
+    environment:
+      <<: *mqenv
+      MQ_USERS: "bridge:${BRIDGE_PASS} nodered:${NODERED_MQTT_PASS}"
+    volumes:
+      - ./mosquitto/entrypoint.sh:/entrypoint.sh:ro
+      - ./mosquitto/mqbroker.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqbroker-cam-data:/mosquitto/data
+
+  nodered-cam:
+    image: nodered/node-red:${NODERED_VERSION:-4.0}
+    restart: unless-stopped
+    user: "${NODERED_UID:-1000}:${NODERED_GID:-1000}"   # host user (Pi: id -u), so files in ./nodered stay yours
+    depends_on:
+      mqbroker-cam: {condition: service_started}
+      influx-cam: {condition: service_healthy}
+    ports:
+      - "${CAM_NODERED_PORT:-1881}:1880"
+    environment:
+      TZ: ${TZ:-Asia/Jakarta}
+      MQTT_HOST: mqbroker-cam
+      MQTT_PORT: "1883"
+      MQTT_CLIENT_ID: nodered-cam
+      MQTT_USER: nodered
+      MQTT_PASS: ${NODERED_MQTT_PASS}
+      INFLUX_WRITE_URL: http://influx-cam:8086/write?db=${INFLUX_DB:-wrwo}&precision=ns
+      INFLUX_CREATE_DB_URL: http://influx-cam:8086/query?q=CREATE%20DATABASE%20${INFLUX_DB:-wrwo}
+      INFLUX_QUERY_URL: http://influx-cam:8086/query
+      INFLUX_DB: ${INFLUX_DB:-wrwo}
+    volumes:
+      - ./nodered/cam/data:/data
+
+  influx-cam:
+    <<: *influx
+    ports:
+      - "${CAM_INFLUX_PORT:-8087}:8086"
+    volumes:
+      - influx-cam-data:/var/lib/influxdb
+
+  grafana-cam:
+    <<: *grafana
+    depends_on:
+      influx-cam: {condition: service_healthy}
+    ports:
+      - "${CAM_GRAFANA_PORT:-3001}:3000"
+    environment:
+      <<: *grafenv
+      INFLUX_URL: http://influx-cam:8086
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana-cam-data:/var/lib/grafana
+
+volumes:
+  mqbroker-cam-data:
+  influx-cam-data:
+  grafana-cam-data:

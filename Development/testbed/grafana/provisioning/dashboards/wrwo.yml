@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: wrwo
+    type: file
+    disableDeletion: true
+    # edits in the UI cannot be saved over the file; use "Save as" or export to grafana/dashboards/
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/dashboards

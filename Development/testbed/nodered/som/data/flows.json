@@ -1,0 +1,276 @@
+[
+  {
+    "id": "tab_wrwo",
+    "type": "tab",
+    "label": "wrwo -> InfluxDB (SOM)",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "broker_local",
+    "type": "mqtt-broker",
+    "name": "MQ-BROKER (MQTT 5)",
+    "broker": "${MQTT_HOST}",
+    "port": "${MQTT_PORT}",
+    "clientid": "${MQTT_CLIENT_ID}",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "5",
+    "keepalive": "30",
+    "cleansession": false,
+    "autoUnsubscribe": false,
+    "sessionExpiry": "86400",
+    "birthTopic": "",
+    "closeTopic": "",
+    "willTopic": ""
+  },
+  {
+    "id": "inj_db",
+    "type": "inject",
+    "z": "tab_wrwo",
+    "name": "on start",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "3",
+    "topic": "",
+    "x": 120,
+    "y": 40,
+    "wires": [
+      [
+        "http_db"
+      ]
+    ]
+  },
+  {
+    "id": "http_db",
+    "type": "http request",
+    "z": "tab_wrwo",
+    "name": "CREATE DATABASE",
+    "method": "POST",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "${INFLUX_CREATE_DB_URL}",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 320,
+    "y": 40,
+    "wires": [
+      [
+        "dbg_db",
+        "fn_daily"
+      ]
+    ]
+  },
+  {
+    "id": "dbg_db",
+    "type": "debug",
+    "z": "tab_wrwo",
+    "name": "db",
+    "active": true,
+    "tosidebar": true,
+    "console": true,
+    "complete": "statusCode",
+    "targetType": "msg",
+    "x": 500,
+    "y": 20,
+    "wires": []
+  },
+  {
+    "id": "fn_daily",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "daily stats CQ",
+    "func": "// Daily statistics for ALL numeric fields of ALL measurements (new devices included):\n// retention policy \"daily\" (kept forever) + continuous query, recreated on every start.\n// Day boundaries follow the container TZ. Strings (cloudsSafe, quality, ...) are skipped\n// by the wildcard; mean_safe / mean_valid_seeing give the fraction of the day.\nconst db = env.get('INFLUX_DB') || 'wrwo';\nconst tz = env.get('TZ') || 'UTC';\nconst sel = `SELECT mean(*), min(*), max(*), count(\"delay_s\") AS points ` +\n            `INTO \"${db}\".\"daily\".:MEASUREMENT FROM \"${db}\".\"autogen\"./.*/`;\nconst grp = `GROUP BY time(1d), \"site\", \"device\" tz('${tz}')`;\nmsg.payload = 'q=' + encodeURIComponent([\n    `CREATE RETENTION POLICY \"daily\" ON \"${db}\" DURATION INF REPLICATION 1`,\n    `DROP CONTINUOUS QUERY \"daily_stats\" ON \"${db}\"`,\n    // every hour: recompute today and yesterday (late data after a link outage included)\n    `CREATE CONTINUOUS QUERY \"daily_stats\" ON \"${db}\" RESAMPLE EVERY 1h FOR 2d BEGIN ${sel} ${grp} END`,\n    // fill today/yesterday right away instead of waiting for the first CQ run\n    `${sel} WHERE time > now() - 2d ${grp}`,\n].join('; '));\nmsg.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };\nreturn msg;",
+    "outputs": 1,
+    "x": 510,
+    "y": 60,
+    "wires": [
+      [
+        "http_daily"
+      ]
+    ]
+  },
+  {
+    "id": "http_daily",
+    "type": "http request",
+    "z": "tab_wrwo",
+    "name": "POST /query",
+    "method": "POST",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "${INFLUX_QUERY_URL}",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 690,
+    "y": 60,
+    "wires": [
+      [
+        "fn_daily_check"
+      ]
+    ]
+  },
+  {
+    "id": "fn_daily_check",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "cek CQ",
+    "func": "let r; try { r = JSON.parse(msg.payload); } catch (e) { r = null; }\nconst errs = ((r && r.results) || []).filter(x => x.error).map(x => x.error);\nif (msg.statusCode !== 200 || errs.length) {\n    node.error('daily statistics setup failed (' + msg.statusCode + '): ' + (errs.join('; ') || msg.payload), msg);\n    node.status({ fill: 'red', shape: 'dot', text: 'failed' });\n} else {\n    node.status({ fill: 'green', shape: 'dot', text: 'CQ daily_stats ok' });\n}\nreturn null;",
+    "outputs": 1,
+    "x": 860,
+    "y": 60,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "in_data",
+    "type": "mqtt in",
+    "z": "tab_wrwo",
+    "name": "wrwo/+/pubdata/#",
+    "topic": "wrwo/+/pubdata/#",
+    "qos": "1",
+    "datatype": "buffer",
+    "broker": "broker_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 120,
+    "wires": [
+      [
+        "fn_parse"
+      ]
+    ]
+  },
+  {
+    "id": "fn_parse",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "parse + timestamp + QC",
+    "func": "// wrwo/<site>/pubdata/<device>/<measurement...>   +  MQTT5 user property timestamp=<unix ns>\nconst parts = msg.topic.split('/');\nif (parts.length < 4 || parts[2] !== 'pubdata') {\n    return [null, { topic: msg.topic, payload: { reason: 'unexpected topic' } }];\n}\nconst site = parts[1];\nconst device = parts[3];\nlet measurement = parts.slice(4).join('_') || 'data';\n\n// ---- timestamp from the MQ-BRIDGE plugin (string, ns) ----------------------\nlet ts = (msg.userProperties || {}).timestamp;\n// an MQTT 5 device may send its own \"timestamp\" user property; the plugin appends its own\n// last. Node-RED hands duplicates over as a JSON string '[\"<device>\",\"<plugin>\"]', so take\n// the last ns number in whatever form it arrives (string, array, JSON string)\nconst tsAll = String(Array.isArray(ts) ? ts.join(',') : (ts || '')).match(/\\d{16,20}/g);\nts = tsAll ? tsAll[tsAll.length - 1] : undefined;\nconst tags = { site, device };\nif (!/^\\d{16,20}$/.test(String(ts || ''))) {        // no plugin timestamp -> fall back, but mark it\n    ts = (BigInt(Date.now()) * 1000000n).toString();\n    tags.ts_source = 'nodered';\n}\n\n// ---- payload -> fields: JSON / telegraf JSON / number / key=value / text ----\nconst text = (Buffer.isBuffer(msg.payload) ? msg.payload.toString() : String(msg.payload)).trim();\nlet fields = {};\nlet obj;\ntry { obj = JSON.parse(text); } catch (e) { obj = undefined; }\nif (obj && typeof obj === 'object' && !Array.isArray(obj)) {\n    if (obj.fields && typeof obj.fields === 'object') {      // telegraf data_format = \"json\"\n        if (obj.name) measurement = String(obj.name);\n        Object.assign(tags, obj.tags || {});\n        obj = obj.fields;\n    }\n    for (const [k, v] of Object.entries(obj)) {\n        if (['ts', 'time', 'timestamp'].includes(k)) continue;\n        if (['number', 'boolean', 'string'].includes(typeof v)) fields[k] = v;\n    }\n} else if (typeof obj === 'number') {\n    fields.value = obj;\n} else if (/^[A-Za-z_][\\w.-]*\\s*=/.test(text)) {\n    for (const p of text.split(/[,;]/)) {\n        const i = p.indexOf('=');\n        if (i < 0) continue;\n        const k = p.slice(0, i).trim(), s = p.slice(i + 1).trim(), n = Number(s);\n        fields[k] = (s !== '' && !isNaN(n)) ? n : (s === 'true' || s === 'false') ? s === 'true' : s;\n    }\n} else {\n    fields.raw = text;\n}\n\n// ---- quality control: physical limits per measurement.field ----------------\nconst LIMITS = {\n    cloudwatcher: { temp: [-30, 60], hum: [0, 100], dewp: [-60, 50], clouds: [-60, 30], rawir: [-80, 60], wind: [0, 200], gust: [0, 250] },\n    seeing:       { seeing_arcsec: [0.1, 20], r0: [0, 2000], temp_inside_box: [-20, 70] },\n};\nconst OFFSET = { 'lunatico.temp': 0.0 };      // calibration, key \"<device>.<field>\"\nconst lim = LIMITS[measurement] || {};\nconst rejected = [];\nfor (const [k, v] of Object.entries(fields)) {\n    if (typeof v !== 'number') continue;\n    const val = v + (OFFSET[device + '.' + k] || 0);\n    const L = lim[k];\n    if (L && (val < L[0] || val > L[1])) { rejected.push(k + '=' + v); delete fields[k]; }\n    else fields[k] = val;\n}\nfields.qc_rejected = rejected.length;\n// how late the point reached THIS Node-RED (grows after a CAM link outage)\nfields.delay_s = Number(BigInt(Date.now()) * 1000000n - BigInt(ts)) / 1e9;\n\nmsg.record = { measurement, tags, fields, ts };\nconst reject = rejected.length ? { topic: msg.topic, payload: { reason: 'out of range', rejected } } : null;\nreturn [msg, reject];",
+    "outputs": 2,
+    "x": 380,
+    "y": 120,
+    "wires": [
+      [
+        "fn_line"
+      ],
+      [
+        "dbg_reject"
+      ]
+    ]
+  },
+  {
+    "id": "fn_line",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "to line protocol",
+    "func": "const r = msg.record;\nconst escM = s => String(s).replace(/[, ]/g, m => '\\\\' + m);\nconst escK = s => String(s).replace(/[,= ]/g, m => '\\\\' + m);\nconst tagStr = Object.keys(r.tags).sort()\n    .filter(k => r.tags[k] !== '' && r.tags[k] != null)\n    .map(k => escK(k) + '=' + escK(r.tags[k])).join(',');\nconst f = [];\nfor (const [k, v] of Object.entries(r.fields)) {\n    if (typeof v === 'number' && isFinite(v)) f.push(escK(k) + '=' + v);   // always float\n    else if (typeof v === 'boolean') f.push(escK(k) + '=' + v);\n    else if (typeof v === 'string') f.push(escK(k) + '=\"' + v.replace(/[\"\\\\]/g, m => '\\\\' + m) + '\"');\n}\nif (!f.length) return null;\nmsg.payload = escM(r.measurement) + ',' + tagStr + ' ' + f.join(',') + ' ' + r.ts;   // ns\nmsg.headers = { 'Content-Type': 'text/plain' };\nreturn msg;",
+    "outputs": 1,
+    "x": 610,
+    "y": 100,
+    "wires": [
+      [
+        "http_write"
+      ]
+    ]
+  },
+  {
+    "id": "http_write",
+    "type": "http request",
+    "z": "tab_wrwo",
+    "name": "POST /write (ns)",
+    "method": "POST",
+    "ret": "txt",
+    "paytoqs": "ignore",
+    "url": "${INFLUX_WRITE_URL}",
+    "tls": "",
+    "persist": true,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 820,
+    "y": 100,
+    "wires": [
+      [
+        "fn_check"
+      ]
+    ]
+  },
+  {
+    "id": "fn_check",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "cek respon",
+    "func": "if (msg.statusCode !== 204) {\n    node.error('InfluxDB write failed (' + msg.statusCode + '): ' + msg.payload, msg);\n    node.status({ fill: 'red', shape: 'dot', text: 'HTTP ' + msg.statusCode });\n} else {\n    const n = (context.get('n') || 0) + 1; context.set('n', n);\n    node.status({ fill: 'green', shape: 'dot', text: n + ' points' });\n}\nreturn null;",
+    "outputs": 1,
+    "x": 1000,
+    "y": 100,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "dbg_reject",
+    "type": "debug",
+    "z": "tab_wrwo",
+    "name": "ditolak (QC)",
+    "active": true,
+    "tosidebar": true,
+    "console": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 610,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "in_state",
+    "type": "mqtt in",
+    "z": "tab_wrwo",
+    "name": "status bridge",
+    "topic": "$SYS/broker/connection/+/state",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "broker_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 130,
+    "y": 240,
+    "wires": [
+      [
+        "fn_state"
+      ]
+    ]
+  },
+  {
+    "id": "fn_state",
+    "type": "function",
+    "z": "tab_wrwo",
+    "name": "bridge UP/DOWN",
+    "func": "// $SYS/broker/connection/<bridge client id>/state : \"1\" = up, \"0\" = down\nconst id = msg.topic.split('/')[3];\nnode.status({ fill: msg.payload == '1' ? 'green' : 'red', shape: 'dot', text: id + (msg.payload == '1' ? ' UP' : ' DOWN') });\nnode.warn('bridge ' + id + ' ' + (msg.payload == '1' ? 'UP' : 'DOWN'));\nreturn null;",
+    "outputs": 1,
+    "x": 360,
+    "y": 240,
+    "wires": [
+      []
+    ]
+  }
+]

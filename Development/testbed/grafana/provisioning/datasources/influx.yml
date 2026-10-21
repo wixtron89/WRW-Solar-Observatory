@@ -1,0 +1,15 @@
+# Same file for SOM and CAM; ${INFLUX_URL} / ${INFLUX_DB} come from the container env
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    uid: influx-wrwo
+    type: influxdb
+    access: proxy
+    url: ${INFLUX_URL}
+    isDefault: true
+    editable: false
+    jsonData:
+      dbName: ${INFLUX_DB}
+      httpMode: GET
+      timeInterval: 2s

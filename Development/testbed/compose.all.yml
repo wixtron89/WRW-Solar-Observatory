@@ -1,0 +1,16 @@
+# WRW observatory telemetry - dev testbed, SOM + CAM on one machine (ROLE=all in .env)
+#
+#  SOM:  Lunatico, Alcor (simulator) --> mqbridge --+--> mqbroker-som --> nodered-som --> influx-som
+#                                                   |
+#  CAM:                                             +--> mqbroker-cam --> nodered-cam --> influx-cam
+#
+# The services live in compose.som.yml and compose.cam.yml; this file runs both in one
+# project. compose.all.env points mqbridge at mqbroker-cam by container name, so CAM_IP
+# in .env is ignored here.
+
+name: wrw-dev
+
+include:
+  - path: compose.som.yml
+    env_file: [.env, compose.all.env]
+  - compose.cam.yml

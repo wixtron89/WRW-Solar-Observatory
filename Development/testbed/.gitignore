@@ -1,0 +1,7 @@
+nodered/*/data/*
+!nodered/*/data/flows.json
+!nodered/*/data/flows_cred.json
+!nodered/*/data/settings.js
+
+# local copy of .env.example with real values
+.env

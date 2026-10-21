@@ -1,0 +1,21 @@
+# Alcor SSM -> MQTT as a service on the SOM machine.
+# Adjust User and the paths if the testbed is not in /home/ucup/wrw-testbed, then:
+#   sudo cp alcor-ssm.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now alcor-ssm
+#   journalctl -u alcor-ssm -f
+[Unit]
+Description=Alcor Solar Seeing Monitor -> MQTT (MQ-BRIDGE)
+After=network-online.target docker.service time-sync.target
+Wants=network-online.target
+
+[Service]
+User=ucup
+WorkingDirectory=/home/ucup/wrw-testbed/devices/alcor
+# DEVICE_PASS and BRIDGE_PORT come from the testbed .env
+EnvironmentFile=/home/ucup/wrw-testbed/.env
+ExecStart=/home/ucup/wrw-testbed/devices/alcor/venv/bin/python -u alcor_ssm_mqtt.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
